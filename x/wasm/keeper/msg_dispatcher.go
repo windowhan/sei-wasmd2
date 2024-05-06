@@ -77,6 +77,8 @@ func (d MessageDispatcher) dispatchMsgWithGasLimit(ctx sdk.Context, contractAddr
 // that dispatched them, both on success as well as failure
 func (d MessageDispatcher) DispatchSubmessages(ctx sdk.Context, contractAddr sdk.AccAddress, ibcPort string, msgs []wasmvmtypes.SubMsg, info wasmvmtypes.MessageInfo, codeInfo types.CodeInfo) ([]byte, error) {
 	var rsp []byte
+
+	moduleLogger(ctx).Info("DispatchSubmessages", "called function", "DispatchSubmessages")
 	for _, msg := range msgs {
 		switch msg.ReplyOn {
 		case wasmvmtypes.ReplySuccess, wasmvmtypes.ReplyError, wasmvmtypes.ReplyAlways, wasmvmtypes.ReplyNever:
@@ -95,6 +97,7 @@ func (d MessageDispatcher) DispatchSubmessages(ctx sdk.Context, contractAddr sdk
 		var err error
 		var events []sdk.Event
 		var data [][]byte
+		moduleLogger(ctx).Info("DispatchSubmessages", "sub msg", msg.Msg)
 		if limitGas {
 			events, data, err = d.dispatchMsgWithGasLimit(subCtx, contractAddr, ibcPort, msg.Msg, *msg.GasLimit, info, codeInfo)
 		} else {
@@ -103,7 +106,9 @@ func (d MessageDispatcher) DispatchSubmessages(ctx sdk.Context, contractAddr sdk
 
 		// if it succeeds, commit state changes from submessage, and pass on events to Event Manager
 		var filteredEvents []sdk.Event
+		moduleLogger(ctx).Info("DispatchSubmessages", "sub msg result err", err)
 		if err == nil {
+			moduleLogger(ctx).Info("DispatchSubmessages", "commit", "+1")
 			commit()
 			filteredEvents = filterEvents(append(em.Events(), events...))
 			ctx.EventManager().EmitEvents(filteredEvents)
